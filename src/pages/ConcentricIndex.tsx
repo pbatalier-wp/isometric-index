@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { researchAreas } from "../data/areas";
+import { motion } from "motion/react";
+import { useDialKit } from "dialkit";
+import { getAreaBySlug, researchAreas } from "../data/areas";
+import { getArticlesByArea } from "../data/articles";
 import { ArticleModal } from "../components/ArticleModal";
 import { ArticleTile, TILE_SIZE } from "../components/ArticleTile";
 import { ArticleHoverCard } from "../components/ArticleHoverCard";
 import { AreaPillNav } from "../components/AreaPillNav";
+import { AreaTransitionCards } from "../components/AreaTransitionCards";
 import { CenterMark } from "../components/CenterMark";
-import { computeArticlePositions } from "../utils/clusterLayout";
-import type { FocusedArticle } from "../types/research";
+import { OrbitPath } from "../components/OrbitPath";
+import { computeOrbitPositions } from "../utils/clusterLayout";
+import { computeIsometricPositions } from "../utils/isometricLayout";
+import type { ArticlePosition, FocusedArticle } from "../types/research";
 
-function ViewToggle() {
+function ViewToggle({ hidden }: { hidden: boolean }) {
   return (
-    <div
+    <motion.div
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ duration: 0.35 }}
       style={{
         position: "fixed",
         top: 24,
@@ -20,6 +28,7 @@ function ViewToggle() {
         display: "flex",
         gap: 2,
         zIndex: 50,
+        pointerEvents: hidden ? "none" : "auto",
       }}
     >
       <button
@@ -67,13 +76,17 @@ function ViewToggle() {
           <line x1="2" y1="13" x2="15" y2="13" stroke="#292929" strokeWidth="1.2" />
         </svg>
       </button>
-    </div>
+    </motion.div>
   );
 }
 
-function StatusChrome() {
+function StatusChrome({ hidden }: { hidden: boolean }) {
   return (
-    <>
+    <motion.div
+      animate={{ opacity: hidden ? 0 : 0.5 }}
+      transition={{ duration: 0.35 }}
+      style={{ pointerEvents: "none" }}
+    >
       <div
         style={{
           position: "fixed",
@@ -82,7 +95,6 @@ function StatusChrome() {
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           color: "var(--color-text)",
-          opacity: 0.5,
           zIndex: 50,
         }}
       >
@@ -96,7 +108,6 @@ function StatusChrome() {
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           color: "var(--color-text)",
-          opacity: 0.5,
           zIndex: 50,
         }}
       >
@@ -110,24 +121,45 @@ function StatusChrome() {
           fontFamily: "var(--font-mono)",
           fontSize: 12,
           color: "var(--color-text)",
-          opacity: 0.5,
           zIndex: 50,
         }}
       >
         info
       </div>
-    </>
+    </motion.div>
   );
+}
+
+interface AreaTransitionState {
+  slug: string;
+  fromPositions: ArticlePosition[];
 }
 
 export default function ConcentricIndex() {
   const navigate = useNavigate();
+  const orbit = useDialKit("Orbit", {
+    showPath: false,
+    radius: [360, 80, 400],
+    ringGap: [30, 0, 120],
+    speed: [0.04, 0, 0.6],
+    arcSpread: [0.4, 0.1, 1.2],
+    pathOpacity: [0.38, 0, 1],
+  });
+
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focused, setFocused] = useState<FocusedArticle | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [areaTransition, setAreaTransition] = useState<AreaTransitionState | null>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [rotation, setRotation] = useState(0);
   const dismissRef = useRef<(() => void) | null>(null);
+  const rotationRef = useRef(0);
+
+  const transitioningArea = areaTransition ? getAreaBySlug(areaTransition.slug) : undefined;
+  const transitioningArticles = transitioningArea
+    ? getArticlesByArea(transitioningArea.id)
+    : [];
 
   useEffect(() => {
     const onResize = () => setSize({ width: window.innerWidth, height: window.innerHeight });
@@ -143,7 +175,35 @@ export default function ConcentricIndex() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const positions = computeArticlePositions(size.width, size.height);
+  useEffect(() => {
+    if (areaTransition) return;
+
+    let frame = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      rotationRef.current += orbit.speed * dt;
+      setRotation(rotationRef.current);
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [orbit.speed, areaTransition]);
+
+  const positions = areaTransition
+    ? areaTransition.fromPositions
+    : computeOrbitPositions({
+        width: size.width,
+        height: size.height,
+        rotation,
+        radius: orbit.radius,
+        ringGap: orbit.ringGap,
+        arcSpread: orbit.arcSpread,
+      });
+
   const hoveredArticle = hoveredId ? positions.find((p) => p.article.id === hoveredId) : null;
 
   const handleModalDismiss = () => {
@@ -153,26 +213,73 @@ export default function ConcentricIndex() {
   };
 
   const handleAreaSelect = (slug: string) => {
+    if (areaTransition || focused) return;
     setActiveSlug(slug);
-    navigate(`/area/${slug}`);
+    setHoveredId(null);
+    setAreaTransition({ slug, fromPositions: positions });
   };
 
+  const handleAreaTransitionComplete = () => {
+    if (!areaTransition) return;
+    navigate(`/area/${areaTransition.slug}`, { state: { fromTransition: true } });
+  };
+
+  const isAreaTransitioning = areaTransition !== null;
+  const transitionFromMap = new Map(
+    areaTransition?.fromPositions.map((position) => [
+      position.article.id,
+      { x: position.x, y: position.y },
+    ]) ?? [],
+  );
+  const transitionToPositions = transitioningArea
+    ? computeIsometricPositions(
+        transitioningArticles,
+        0,
+        size.width,
+        size.height,
+      )
+    : [];
+
   return (
-    <div
+    <motion.div
+      animate={{
+        perspective: isAreaTransitioning ? 4000 : 0,
+      }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       style={{
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
         position: "relative",
         background: "var(--color-bg)",
-        pointerEvents: transitioning ? "none" : "auto",
+        perspectiveOrigin: "50% 50%",
+        pointerEvents: transitioning || isAreaTransitioning ? "none" : "auto",
       }}
     >
-      <ViewToggle />
-      <StatusChrome />
-      <CenterMark />
+      <ViewToggle hidden={isAreaTransitioning} />
+      <StatusChrome hidden={isAreaTransitioning} />
+
+      {orbit.showPath && !isAreaTransitioning && (
+        <OrbitPath
+          width={size.width}
+          height={size.height}
+          radius={orbit.radius}
+          ringGap={orbit.ringGap}
+          opacity={orbit.pathOpacity}
+        />
+      )}
+
+      <motion.div
+        animate={{ opacity: isAreaTransitioning ? 0 : 1, scale: isAreaTransitioning ? 0.8 : 1 }}
+        transition={{ duration: 0.4 }}
+      >
+        <CenterMark />
+      </motion.div>
 
       {positions.map(({ article, x, y }) => {
+        const isSelectedArea = transitioningArea?.id === article.areaId;
+        if (isAreaTransitioning && isSelectedArea) return null;
+
         const isHovered = hoveredId === article.id;
         const isDimmed = hoveredId !== null && !isHovered;
         const isFocused = focused?.article.id === article.id;
@@ -185,6 +292,7 @@ export default function ConcentricIndex() {
             y={y}
             isHovered={isHovered}
             isDimmed={isDimmed}
+            isExiting={isAreaTransitioning}
             isFocused={isFocused}
             onHover={setHoveredId}
             onClick={() =>
@@ -201,7 +309,17 @@ export default function ConcentricIndex() {
         );
       })}
 
-      {hoveredArticle && !focused && (
+      {isAreaTransitioning && transitioningArea && (
+        <AreaTransitionCards
+          area={transitioningArea}
+          articles={transitioningArticles}
+          fromPositions={transitionFromMap}
+          toPositions={transitionToPositions}
+          onComplete={handleAreaTransitionComplete}
+        />
+      )}
+
+      {hoveredArticle && !focused && !isAreaTransitioning && (
         <ArticleHoverCard
           article={hoveredArticle.article}
           x={hoveredArticle.x}
@@ -211,7 +329,7 @@ export default function ConcentricIndex() {
 
       <AreaPillNav
         areas={researchAreas}
-        activeSlug={activeSlug}
+        activeSlug={areaTransition?.slug ?? activeSlug}
         onSelect={handleAreaSelect}
       />
 
@@ -223,6 +341,6 @@ export default function ConcentricIndex() {
           dismissRef={dismissRef}
         />
       )}
-    </div>
+    </motion.div>
   );
 }

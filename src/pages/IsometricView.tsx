@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { getAreaBySlug } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
 import { ArticleModal } from "../components/ArticleModal";
+import { computeIsometricPositions, CARD_H, CARD_W } from "../utils/isometricLayout";
 import type { FocusedArticle } from "../types/research";
-
-const CARD_W = 200;
-const CARD_H = 260;
-const STEP_X = 40;
 
 export default function IsometricView() {
   const { areaSlug } = useParams<{ areaSlug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromTransition = Boolean(
+    (location.state as { fromTransition?: boolean } | null)?.fromTransition,
+  );
   const area = areaSlug ? getAreaBySlug(areaSlug) : undefined;
   const articles = area ? getArticlesByArea(area.id) : [];
 
@@ -53,8 +54,12 @@ export default function IsometricView() {
     setTimeout(() => setTransitioning(false), 100);
   };
 
-  const cardCount = articles.length;
-  const loopSpan = cardCount * STEP_X;
+  const positions = computeIsometricPositions(
+    articles,
+    scroll,
+    window.innerWidth,
+    window.innerHeight,
+  );
 
   return (
     <div
@@ -69,8 +74,11 @@ export default function IsometricView() {
         pointerEvents: transitioning ? "none" : "auto",
       }}
     >
-      <button
+      <motion.button
         type="button"
+        initial={fromTransition ? { opacity: 0, y: -8 } : false}
+        animate={{ opacity: 0.6, y: 0 }}
+        transition={{ delay: fromTransition ? 0.15 : 0, duration: 0.35 }}
         onClick={() => navigate("/")}
         style={{
           position: "fixed",
@@ -82,15 +90,17 @@ export default function IsometricView() {
           fontFamily: "var(--font-serif)",
           fontSize: 16,
           color: "var(--color-text)",
-          opacity: 0.6,
           cursor: "pointer",
           letterSpacing: "-0.16px",
         }}
       >
         ← All research
-      </button>
+      </motion.button>
 
-      <div
+      <motion.div
+        initial={fromTransition ? { opacity: 0, y: -8 } : false}
+        animate={{ opacity: 0.5, y: 0 }}
+        transition={{ delay: fromTransition ? 0.2 : 0, duration: 0.35 }}
         style={{
           position: "fixed",
           top: 24,
@@ -99,34 +109,26 @@ export default function IsometricView() {
           fontFamily: "var(--font-serif)",
           fontSize: 16,
           color: "var(--color-text)",
-          opacity: 0.5,
           zIndex: 50,
         }}
       >
         {area.label}
-      </div>
+      </motion.div>
 
-      {articles.map((article, i) => {
-        const rawPos = i * STEP_X - scroll;
-        const pos = ((rawPos % loopSpan) + loopSpan) % loopSpan;
-
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-
-        const x = vw - CARD_W + 40 - (pos / loopSpan) * (vw + loopSpan);
-        const y = 40 + (pos / loopSpan) * (vh + 200);
-
+      {positions.map(({ article, x, y, zIndex }) => {
         const isThisFocused = focused?.article.id === article.id;
 
         return (
           <motion.div
             key={article.id}
+            initial={fromTransition ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             whileHover="hover"
             style={{
               position: "absolute",
               left: x,
               top: y,
-              zIndex: Math.round(pos),
+              zIndex,
               cursor: "pointer",
               visibility: isThisFocused ? "hidden" : "visible",
             }}
@@ -135,7 +137,7 @@ export default function IsometricView() {
                 article,
                 originX: x,
                 originY: y,
-                zIndex: Math.round(pos),
+                zIndex,
                 width: CARD_W,
                 height: CARD_H,
                 rotateY: -15,

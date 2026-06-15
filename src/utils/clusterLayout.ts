@@ -2,38 +2,50 @@ import type { ResearchArticle, ArticlePosition } from "../types/research";
 import { researchAreas } from "../data/areas";
 import { researchArticles } from "../data/articles";
 
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
+export interface OrbitConfig {
+  width: number;
+  height: number;
+  rotation: number;
+  radius: number;
+  ringGap: number;
+  arcSpread: number;
 }
 
-export function computeArticlePositions(
-  width: number,
-  height: number,
+export function computeOrbitPositions(
+  config: OrbitConfig,
   articles: ResearchArticle[] = researchArticles,
 ): ArticlePosition[] {
+  const { width, height, rotation, radius, ringGap, arcSpread } = config;
   const centerX = width / 2;
   const centerY = height / 2;
-  const clusterRadius = Math.min(width, height) * 0.32;
+  const positions: ArticlePosition[] = [];
 
-  return articles.map((article) => {
-    const area = researchAreas.find((a) => a.id === article.areaId);
-    const clusterAngle = area?.clusterAngle ?? 0;
-    const clusterCx = centerX + Math.cos(clusterAngle) * clusterRadius;
-    const clusterCy = centerY + Math.sin(clusterAngle) * clusterRadius;
+  researchAreas.forEach((area, ringIndex) => {
+    const areaArticles = articles.filter((article) => article.areaId === area.id);
+    const r = radius + ringIndex * ringGap;
 
-    const seed = hashString(article.id);
-    const seedAngle = ((seed % 360) / 360) * Math.PI * 2;
-    const spreadRadius = 60 + (seed % 100);
+    areaArticles.forEach((article, index) => {
+      const sectorOffset =
+        areaArticles.length === 1
+          ? 0
+          : (index / (areaArticles.length - 1) - 0.5) * arcSpread;
+      const angle = rotation + area.clusterAngle + sectorOffset;
 
-    return {
-      article,
-      x: clusterCx + Math.cos(seedAngle) * spreadRadius,
-      y: clusterCy + Math.sin(seedAngle) * spreadRadius,
-    };
+      positions.push({
+        article,
+        x: centerX + Math.cos(angle) * r,
+        y: centerY + Math.sin(angle) * r,
+      });
+    });
   });
+
+  return positions;
+}
+
+export function getOrbitRingRadii(
+  radius: number,
+  ringGap: number,
+  ringCount: number = researchAreas.length,
+): number[] {
+  return Array.from({ length: ringCount }, (_, index) => radius + index * ringGap);
 }

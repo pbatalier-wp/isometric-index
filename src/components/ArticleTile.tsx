@@ -9,6 +9,7 @@ interface ArticleTileProps {
   y: number;
   isHovered: boolean;
   isDimmed: boolean;
+  isHeavilyDimmed?: boolean;
   isExiting?: boolean;
   isFocused: boolean;
   onHover: (id: string | null) => void;
@@ -21,6 +22,7 @@ export function ArticleTile({
   y,
   isHovered,
   isDimmed,
+  isHeavilyDimmed = false,
   isExiting = false,
   isFocused,
   onHover,
@@ -29,11 +31,11 @@ export function ArticleTile({
   return (
     <motion.div
       animate={{
-        opacity: isExiting ? 0 : isDimmed ? 0.3 : 1,
-        filter: isExiting ? "blur(10px)" : isDimmed ? "blur(5px)" : "blur(0px)",
+        opacity: isExiting ? 0 : isHeavilyDimmed ? 0.18 : isDimmed ? 0.3 : 1,
+        filter: isExiting ? "blur(10px)" : isHeavilyDimmed ? "blur(14px)" : isDimmed ? "blur(5px)" : "blur(0px)",
         scale: isExiting ? 0.75 : isHovered ? 1.05 : 1,
       }}
-      transition={{ duration: isExiting ? 0.45 : 0.2 }}
+      transition={{ duration: isExiting ? 0.45 : isHeavilyDimmed ? 0.35 : 0.2 }}
       onMouseEnter={() => onHover(article.id)}
       onMouseLeave={() => onHover(null)}
       onClick={onClick}

@@ -4,13 +4,13 @@ import { motion } from "motion/react";
 import { useDialKit } from "dialkit";
 import { getAreaBySlug, researchAreas } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
-import { ArticleModal } from "../components/ArticleModal";
 import { ArticleTile, TILE_SIZE } from "../components/ArticleTile";
 import { ArticleHoverCard } from "../components/ArticleHoverCard";
 import { AreaPillNav } from "../components/AreaPillNav";
 import { AreaTransitionCards } from "../components/AreaTransitionCards";
 import { CenterMark } from "../components/CenterMark";
 import { OrbitPath } from "../components/OrbitPath";
+import { SpiralArticlePreview } from "../components/SpiralArticlePreview";
 import { computeOrbitPositions } from "../utils/clusterLayout";
 import { computeIsometricPositions } from "../utils/isometricLayout";
 import type { ArticlePosition, FocusedArticle } from "../types/research";
@@ -176,7 +176,7 @@ export default function ConcentricIndex() {
   }, []);
 
   useEffect(() => {
-    if (areaTransition) return;
+    if (areaTransition || focused) return;
 
     let frame = 0;
     let last = performance.now();
@@ -191,7 +191,7 @@ export default function ConcentricIndex() {
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [orbit.speed, areaTransition]);
+  }, [orbit.speed, areaTransition, focused]);
 
   const positions = areaTransition
     ? areaTransition.fromPositions
@@ -281,7 +281,11 @@ export default function ConcentricIndex() {
         if (isAreaTransitioning && isSelectedArea) return null;
 
         const isHovered = hoveredId === article.id;
-        const isDimmed = hoveredId !== null && !isHovered;
+        const previewOpen = focused !== null;
+        const isDimmed = previewOpen
+          ? focused.article.id !== article.id
+          : hoveredId !== null && !isHovered;
+        const isHeavilyDimmed = previewOpen && focused.article.id !== article.id;
         const isFocused = focused?.article.id === article.id;
 
         return (
@@ -292,10 +296,12 @@ export default function ConcentricIndex() {
             y={y}
             isHovered={isHovered}
             isDimmed={isDimmed}
+            isHeavilyDimmed={isHeavilyDimmed}
             isExiting={isAreaTransitioning}
             isFocused={isFocused}
             onHover={setHoveredId}
-            onClick={() =>
+            onClick={() => {
+              setHoveredId(null);
               setFocused({
                 article,
                 originX: x - TILE_SIZE / 2,
@@ -303,8 +309,8 @@ export default function ConcentricIndex() {
                 zIndex: 10,
                 width: TILE_SIZE,
                 height: TILE_SIZE,
-              })
-            }
+              });
+            }}
           />
         );
       })}
@@ -334,7 +340,7 @@ export default function ConcentricIndex() {
       />
 
       {focused && (
-        <ArticleModal
+        <SpiralArticlePreview
           key={focused.article.id}
           focused={focused}
           onDismiss={handleModalDismiss}

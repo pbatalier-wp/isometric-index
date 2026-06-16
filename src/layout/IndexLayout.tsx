@@ -27,12 +27,13 @@ export default function IndexLayout() {
     ArticleModal: VariantArticleModal,
   } = activeVariant;
   const ArticleModal = VariantArticleModal ?? ArticlePageModal;
+  const isStacked = activeVariant.routing === "stacked";
 
   return (
     <ArticleOverlayProvider open={isArticleRoute}>
       <Routes key={activeVariant.id} location={spatialLocation}>
         <Route path="/" element={<ConcentricView />} />
-        <Route path="/area/:areaSlug" element={<IsometricView />} />
+        {!isStacked && <Route path="/area/:areaSlug" element={<IsometricView />} />}
       </Routes>
       <Routes>
         <Route path="/article/:slug" element={<ArticleModal />} />

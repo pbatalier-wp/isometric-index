@@ -41,6 +41,7 @@ export function ResearchNavProvider({ children }: { children: ReactNode }) {
   const [pageState, setPageState] = useState<ResearchNavPageState>(defaultPageState);
 
   const routeMatch = location.pathname.match(/^\/area\/([^/]+)/);
+  const isArticleRoute = location.pathname.startsWith("/article/");
   const view: ResearchNavView = routeMatch ? "isometric" : "concentric";
   const routeAreaSlug = routeMatch?.[1] ?? null;
   const activeSlug = pageState.activeSlug ?? routeAreaSlug;
@@ -57,7 +58,7 @@ export function ResearchNavProvider({ children }: { children: ReactNode }) {
         onSelect={pageState.onSelectArea}
         onLeadClick={pageState.onBackToConcentric}
         leadDisabled={view === "concentric"}
-        hidden={pageState.hidden}
+        hidden={pageState.hidden || isArticleRoute}
         disabled={pageState.disabled}
       />
     </ResearchNavContext.Provider>

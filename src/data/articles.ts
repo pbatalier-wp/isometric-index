@@ -10,7 +10,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "A layout-aware representation learning framework for identity documents that maps each document into a discriminative 512-dimensional embedding space with strong inter-class separability and intra-class compactness.",
     areaId: "fraud-intelligence",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/layout-aware-representation-learning-for-open-set-id-fraud-discovery",
     thumbnail: "/thumbnails/fraud-1.png",
   },
   {
@@ -22,7 +22,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Examines how identity muling works, why it is difficult to detect, and which risk signals and defense strategies organizations can use to identify and disrupt identity mule operations.",
     areaId: "fraud-intelligence",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/identity-muling-and-techniques-to-combat-the-rise-of-second-party-fraud",
     thumbnail: "/thumbnails/fraud-2.png",
   },
   {
@@ -34,7 +34,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Introduces a practical framework that defines business-aligned benchmarks that are cheaper to label, stable under performative drift, and foundational for systematic fraud model development.",
     areaId: "fraud-intelligence",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/threat-domain-partitioning-and-sorted-rejection-labeling-benchmarking-for-adversarial-environments",
     thumbnail: "/thumbnails/fraud-3.png",
   },
   {
@@ -46,7 +46,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Explores how integrating online credibility signals from a business's website, social media presence, and customer reviews adds vital context to KYB.",
     areaId: "fraud-intelligence",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/modernizing-know-your-business-kyb-with-online-credibility-signals",
     thumbnail: "/thumbnails/privacy.png",
   },
   {
@@ -58,7 +58,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "A comprehensive study of identity leakage in visual embeddings and Identity Sanitization Projection (ISP) as an effective mitigation toward more privacy-friendly vision models.",
     areaId: "data-privacy",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/from-measurement-to-mitigation-quantifying-and-reducing-identity-leakage-in-image-representation-encoders-with-linear-subspace-removal",
     thumbnail: "/thumbnails/privacy.png",
   },
   {
@@ -70,7 +70,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Understanding emerging laws and implementing adaptable, privacy-conscious verification systems to protect minors, maintain trust, and meet evolving global standards.",
     areaId: "online-safety",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/navigating-global-age-verification-laws-in-the-digital-era",
     thumbnail: "/thumbnails/safety-1.png",
   },
   {
@@ -82,7 +82,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Persona Atlas is a free, collaborative database and API designed to help compliance teams navigate the complex landscape of age assurance and privacy laws.",
     areaId: "online-safety",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/atlas-a-global-age-regulation-tracker",
     thumbnail: "/thumbnails/atlas.png",
     isTool: true,
   },
@@ -95,7 +95,7 @@ export const researchArticles: ResearchArticle[] = [
     summary:
       "Digital identity connects who people are in the real world with how they interact online, combining personal data, behavioral patterns, and technological signals to establish authenticity.",
     areaId: "accessible-identity",
-    href: "https://withpersona.com/research",
+    href: "https://withpersona.com/research/understanding-and-verifying-digital-identity",
     thumbnail: "/thumbnails/accessible.png",
   },
 ];
@@ -106,4 +106,8 @@ export function getArticlesByArea(areaId: string): ResearchArticle[] {
 
 export function getArticleById(id: string): ResearchArticle | undefined {
   return researchArticles.find((article) => article.id === id);
+}
+
+export function getArticleBySlug(slug: string): ResearchArticle | undefined {
+  return researchArticles.find((article) => article.slug === slug);
 }

@@ -1,7 +1,7 @@
 import type { Transition } from "motion/react";
-import type { TransitionDialValues, TransitionEasing } from "../config/transitions";
+import type { TransitionValues, TransitionEasing } from "../config/transitions";
 
-export function buildMorphTransition(values: TransitionDialValues): Transition {
+export function buildMorphTransition(values: TransitionValues): Transition {
   if (values.easing === "spring") {
     return values.spring;
   }

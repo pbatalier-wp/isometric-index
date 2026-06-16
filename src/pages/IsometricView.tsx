@@ -3,17 +3,17 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useDialKit } from "dialkit";
 import { ORBIT_DIAL_CONFIG } from "../config/orbit";
-import { TRANSITION_DIAL_CONFIG, asTransitionValues } from "../config/transitions";
+import { TRANSITION_DEFAULTS } from "../config/transitions";
 import { useResearchNav } from "../context/ResearchNavContext";
+import { useIsArticleOverlayOpen } from "../context/ArticleOverlayContext";
 import { getAreaBySlug } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
-import { ArticleModal } from "../components/ArticleModal";
 import { AreaTransitionCards } from "../components/AreaTransitionCards";
+import { useOpenArticle } from "../hooks/useOpenArticle";
 import { computeOrbitPositions } from "../utils/clusterLayout";
 import { computeIsometricPositions, CARD_H, CARD_W } from "../utils/isometricLayout";
 import { isometricToMorph, orbitCenterToMorph } from "../utils/transitionMorph";
 import { buildMorphTransition } from "../utils/transitionMotion";
-import type { FocusedArticle } from "../types/research";
 
 interface LocationState {
   fromTransition?: boolean;
@@ -28,23 +28,21 @@ export default function IsometricView() {
   const fromTransition = Boolean(locationState.fromTransition);
   const savedRotation = locationState.rotation ?? 0;
   const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
-  const transitions = useDialKit("Transitions", TRANSITION_DIAL_CONFIG);
+  const openArticle = useOpenArticle();
+  const isArticleOpen = useIsArticleOverlayOpen();
 
   const area = areaSlug ? getAreaBySlug(areaSlug) : undefined;
   const articles = area ? getArticlesByArea(area.id) : [];
 
   const [scroll, setScroll] = useState(0);
-  const [focused, setFocused] = useState<FocusedArticle | null>(null);
-  const [transitioning, setTransitioning] = useState(false);
   const [macroTransition, setMacroTransition] = useState(false);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const accRef = useRef(0);
-  const dismissRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!location.state) return;
+    if (!location.state || isArticleOpen) return;
     navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+  }, [isArticleOpen, location.pathname, location.state, navigate]);
 
   useEffect(() => {
     if (!area) navigate("/", { replace: true });
@@ -57,54 +55,39 @@ export default function IsometricView() {
   }, []);
 
   useEffect(() => {
-    if (macroTransition) return;
+    if (macroTransition || isArticleOpen) return;
 
     const onWheel = (e: WheelEvent) => {
-      if (focused) return;
       e.preventDefault();
       accRef.current += e.deltaY * 0.4;
       setScroll(accRef.current);
     };
     window.addEventListener("wheel", onWheel, { passive: false });
     return () => window.removeEventListener("wheel", onWheel);
-  }, [focused, macroTransition]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismissRef.current?.();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [isArticleOpen, macroTransition]);
 
   const handleBackToMacro = useCallback(() => {
-    if (macroTransition || focused) return;
+    if (macroTransition || isArticleOpen) return;
     setMacroTransition(true);
-  }, [macroTransition, focused]);
+  }, [isArticleOpen, macroTransition]);
 
   const handleAreaSelect = useCallback(
     (slug: string) => {
-      if (!area || slug === area.slug) return;
+      if (!area || slug === area.slug || isArticleOpen) return;
       navigate(`/area/${slug}`);
     },
-    [area, navigate],
+    [area, isArticleOpen, navigate],
   );
 
   useResearchNav({
     activeSlug: area?.slug ?? null,
-    hidden: focused !== null,
-    disabled: transitioning || macroTransition,
+    hidden: false,
+    disabled: macroTransition,
     onSelectArea: handleAreaSelect,
     onBackToConcentric: handleBackToMacro,
   });
 
   if (!area || articles.length === 0) return null;
-
-  const handleModalDismiss = () => {
-    setTransitioning(true);
-    setFocused(null);
-    setTimeout(() => setTransitioning(false), 100);
-  };
 
   const handleMacroTransitionComplete = () => {
     navigate("/", {
@@ -159,7 +142,7 @@ export default function IsometricView() {
         perspective: "4000px",
         perspectiveOrigin: "50% 50%",
         background: "var(--color-bg)",
-        pointerEvents: transitioning || macroTransition ? "none" : "auto",
+        pointerEvents: macroTransition ? "none" : "auto",
       }}
     >
       <motion.div
@@ -181,64 +164,49 @@ export default function IsometricView() {
       </motion.div>
 
       {!macroTransition &&
-        isometricPositions.map(({ article, x, y, zIndex }) => {
-          const isThisFocused = focused?.article.id === article.id;
-
-          return (
+        isometricPositions.map(({ article, x, y, zIndex }) => (
+          <motion.div
+            key={article.id}
+            initial={fromTransition ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover="hover"
+            style={{
+              position: "absolute",
+              left: x,
+              top: y,
+              zIndex,
+              cursor: "pointer",
+            }}
+            onClick={() => openArticle(article.slug, article.id)}
+          >
             <motion.div
-              key={article.id}
-              initial={fromTransition ? false : { opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover="hover"
-              style={{
-                position: "absolute",
-                left: x,
-                top: y,
-                zIndex,
-                cursor: "pointer",
-                visibility: isThisFocused ? "hidden" : "visible",
+              variants={{
+                hover: { y: -50, transition: { duration: 0.2 } },
+                initial: { y: 0 },
               }}
-              onClick={() =>
-                setFocused({
-                  article,
-                  originX: x,
-                  originY: y,
-                  zIndex,
-                  width: CARD_W,
-                  height: CARD_H,
-                  rotateY: -15,
-                })
-              }
+              style={{
+                width: CARD_W,
+                height: CARD_H,
+                backgroundColor: area.accentColor,
+                transform: "rotateY(-15deg)",
+                transformOrigin: "center center",
+                borderRadius: 4,
+                overflow: "hidden",
+                border: "1px solid rgba(0,0,0,0.12)",
+              }}
             >
-              <motion.div
-                variants={{
-                  hover: { y: -50, transition: { duration: 0.2 } },
-                  initial: { y: 0 },
-                }}
+              <img
+                src={article.thumbnail}
+                alt=""
                 style={{
-                  width: CARD_W,
-                  height: CARD_H,
-                  backgroundColor: area.accentColor,
-                  transform: "rotateY(-15deg)",
-                  transformOrigin: "center center",
-                  borderRadius: 4,
-                  overflow: "hidden",
-                  border: "1px solid rgba(0,0,0,0.12)",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
                 }}
-              >
-                <img
-                  src={article.thumbnail}
-                  alt=""
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </motion.div>
+              />
             </motion.div>
-          );
-        })}
+          </motion.div>
+        ))}
 
       {macroTransition && (
         <AreaTransitionCards
@@ -247,18 +215,9 @@ export default function IsometricView() {
           fromByArticle={transitionFromByArticle}
           toByArticle={transitionToByArticle}
           direction="to-concentric"
-          morphTransition={buildMorphTransition(asTransitionValues(transitions.toConcentric))}
-          flattenDuration={asTransitionValues(transitions.toConcentric).flattenDuration}
+          morphTransition={buildMorphTransition(TRANSITION_DEFAULTS.toConcentric)}
+          flattenDuration={TRANSITION_DEFAULTS.toConcentric.flattenDuration}
           onComplete={handleMacroTransitionComplete}
-        />
-      )}
-
-      {focused && (
-        <ArticleModal
-          key={focused.article.id}
-          focused={focused}
-          onDismiss={handleModalDismiss}
-          dismissRef={dismissRef}
         />
       )}
     </div>

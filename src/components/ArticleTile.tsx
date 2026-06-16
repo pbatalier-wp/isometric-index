@@ -13,6 +13,7 @@ interface ArticleTileProps {
   isExiting?: boolean;
   isEntering?: boolean;
   isFocused: boolean;
+  allowClickWhenDimmed?: boolean;
   onHover: (id: string | null) => void;
   onClick: () => void;
 }
@@ -27,6 +28,7 @@ export function ArticleTile({
   isExiting = false,
   isEntering = false,
   isFocused,
+  allowClickWhenDimmed = false,
   onHover,
   onClick,
 }: ArticleTileProps) {
@@ -50,7 +52,7 @@ export function ArticleTile({
         height: TILE_SIZE,
         cursor: "pointer",
         visibility: isFocused ? "hidden" : "visible",
-        pointerEvents: isDimmed || isExiting ? "none" : "auto",
+        pointerEvents: isExiting || (isDimmed && !allowClickWhenDimmed) ? "none" : "auto",
         zIndex: isHovered ? 100 : 1,
       }}
     >

@@ -53,6 +53,71 @@ button {
   font-family: inherit;
 }
 
+.center-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--color-bg);
+  z-index: 5;
+  transition: opacity 0.2s;
+}
+
+.center-mark--disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.center-mark-copy {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: -0.28px;
+  color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.center-lucky-button {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease,
+    color 0.28s ease;
+}
+
+.center-lucky-button:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(20, 22, 32, 0.94);
+  color: rgba(255, 255, 255, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(1.6px) saturate(1.08) brightness(1.01);
+  -webkit-backdrop-filter: blur(1.6px) saturate(1.08) brightness(1.01);
+}
+
+.center-lucky-button:disabled {
+  cursor: not-allowed;
+}
+
 .article-modal-backdrop {
   position: fixed;
   inset: 0;

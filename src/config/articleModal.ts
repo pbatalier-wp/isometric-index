@@ -2,6 +2,9 @@
 export const JULY_MODAL_LINEAR_EASE =
   "linear(0 0%, .005927 1%, .022466 2%, .047872 3%, .080554 4%, .119068 5%, .162116 6%, .208536 7%, .2573 8%, .3075 9%, .358346 10%, .409157 11%, .45935 12%, .508438 13%, .556014 14%, .601751 15%, .645389 16%, .686733 17%, .72564 18%, .762019 19%, .795818 20%, .827026 21%, .855662 22%, .881772 23%, .905423 24%, .926704 25%, .945714 26%, .962568 27%, .977386 28%, .990295 29%, 1.001426 30%, 1.010911 31%, 1.018881 32%, 1.025465 33%, 1.030792 34%, 1.034982 35%, 1.038155 36%, 1.040423 37%, 1.041892 38%, 1.042662 39%, 1.042827 40%, 1.042473 41%, 1.04168 42%, 1.040522 43%, 1.039065 44%, 1.037371 45%, 1.035493 46%, 1.03348 47%, 1.031376 48%, 1.029217 49%, 1.027037 50%, 1.024864 51%, 1.022722 52%, 1.020631 53%, 1.018608 54%, 1.016667 55%, 1.014817 56%, 1.013067 57%, 1.011422 58%, 1.009887 59%, 1.008462 60%, 1.007148 61%, 1.005944 62%, 1.004847 63%, 1.003855 64%, 1.002964 65%, 1.002169 66%, 1.001466 67%, 1.000848 68%, 1.000311 69%, .999849 70%, .999457 71%, .999128 72%, .998858 73%, .99864 74%, .99847 75%, .998342 76%, .998253 77%, .998196 78%, .998169 79%, .998167 80%, .998186 81%, .998224 82%, .998276 83%, .998341 84%, .998415 85%, .998497 86%, .998584 87%, .998675 88%, .998768 89%, .998861 90%, .998954 91%, .999045 92%, .999134 93%, .99922 94%, .999303 95%, .999381 96%, .999455 97%, .999525 98%, .999589 99%, .99965 100%)";
 
+// Wire useDialKit("Article modal", ARTICLE_MODAL_DIAL_CONFIG) in ArticlePageModal to expose controls.
+const dial = (tuple: [number, number, number]) => tuple[0];
+
 export const ARTICLE_MODAL_DIAL_CONFIG = {
   backdrop: {
     duration: [0.4, 0.1, 2] as [number, number, number],
@@ -27,6 +30,31 @@ export const ARTICLE_MODAL_DIAL_CONFIG = {
       yPercent: [100, 0, 100] as [number, number, number],
       scale: [0.98, 0.9, 1.05] as [number, number, number],
       opacity: [0, 0, 1] as [number, number, number],
+    },
+  },
+};
+
+export const ARTICLE_MODAL_SETTINGS = {
+  backdrop: {
+    duration: dial(ARTICLE_MODAL_DIAL_CONFIG.backdrop.duration),
+    opacity: dial(ARTICLE_MODAL_DIAL_CONFIG.backdrop.opacity),
+  },
+  panel: {
+    useJulyEasing: ARTICLE_MODAL_DIAL_CONFIG.panel.useJulyEasing,
+    duration: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.duration),
+    easing: ARTICLE_MODAL_DIAL_CONFIG.panel.easing,
+    enter: {
+      fromYPercent: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.fromYPercent),
+      toY: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.toY),
+      fromScale: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.fromScale),
+      toScale: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.toScale),
+      fromOpacity: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.fromOpacity),
+      toOpacity: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.enter.toOpacity),
+    },
+    exit: {
+      yPercent: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.exit.yPercent),
+      scale: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.exit.scale),
+      opacity: dial(ARTICLE_MODAL_DIAL_CONFIG.panel.exit.opacity),
     },
   },
 };

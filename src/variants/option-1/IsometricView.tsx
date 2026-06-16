@@ -2,21 +2,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useDialKit } from "dialkit";
-import { ORBIT_DIAL_CONFIG } from "../config/orbit";
-import { TRANSITION_DEFAULTS } from "../config/transitions";
-import { useResearchNav } from "../context/ResearchNavContext";
-import { useIsArticleOverlayOpen } from "../context/ArticleOverlayContext";
-import { getAreaBySlug } from "../data/areas";
-import { getArticlesByArea } from "../data/articles";
-import { AreaTransitionCards } from "../components/AreaTransitionCards";
-import { ArticleBreadcrumbTrail } from "../components/ArticleBreadcrumbTrail";
-import { ArticleRadialHoverMenu } from "../components/ArticleRadialHoverMenu";
-import { useArticleTrail } from "../context/ArticleTrailContext";
-import { useOpenArticle } from "../hooks/useOpenArticle";
-import { computeOrbitPositions } from "../utils/clusterLayout";
-import { computeIsometricPositions, CARD_H, CARD_W } from "../utils/isometricLayout";
-import { isometricToMorph, orbitCenterToMorph } from "../utils/transitionMorph";
-import { buildMorphTransition } from "../utils/transitionMotion";
+import { ORBIT_DIAL_CONFIG } from "../../config/orbit";
+import { TRANSITION_DEFAULTS } from "./config/transitions";
+import { useResearchNav } from "../../context/ResearchNavContext";
+import { useIsArticleOverlayOpen } from "../../context/ArticleOverlayContext";
+import { useViewVariantTransition } from "../../context/ViewVariantContext";
+import { useArticleTrail } from "../../context/ArticleTrailContext";
+import { getAreaBySlug } from "../../data/areas";
+import { getArticlesByArea } from "../../data/articles";
+import { AreaTransitionCards } from "../../components/AreaTransitionCards";
+import { ArticleBreadcrumbTrail } from "../../components/ArticleBreadcrumbTrail";
+import { ArticleRadialHoverMenu } from "../../components/ArticleRadialHoverMenu";
+import { useOpenArticle } from "../../hooks/useOpenArticle";
+import { computeOrbitPositions } from "../../utils/clusterLayout";
+import { computeIsometricPositions, CARD_H, CARD_W } from "../../utils/isometricLayout";
+import { isometricToMorph, orbitCenterToMorph } from "./config/morph";
+import { buildMorphTransition } from "../../utils/transitionMotion";
 
 interface LocationState {
   fromTransition?: boolean;
@@ -33,6 +34,7 @@ export default function IsometricView() {
   const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
   const openArticle = useOpenArticle();
   const isArticleOpen = useIsArticleOverlayOpen();
+  const { setTransitioning } = useViewVariantTransition();
   const { trailSegments } = useArticleTrail();
 
   const area = areaSlug ? getAreaBySlug(areaSlug) : undefined;
@@ -56,6 +58,11 @@ export default function IsometricView() {
       hoverClearRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    setTransitioning(macroTransition);
+    return () => setTransitioning(false);
+  }, [macroTransition, setTransitioning]);
 
   useEffect(() => {
     if (!location.state || isArticleOpen) return;

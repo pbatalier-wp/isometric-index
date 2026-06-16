@@ -2,25 +2,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { useDialKit } from "dialkit";
-import { ORBIT_DIAL_CONFIG } from "../config/orbit";
-import { TRANSITION_DEFAULTS } from "../config/transitions";
-import { useArticleTrail } from "../context/ArticleTrailContext";
-import { useIsArticleOverlayOpen } from "../context/ArticleOverlayContext";
-import { getAreaBySlug } from "../data/areas";
-import { getArticlesByArea } from "../data/articles";
-import { ArticleBreadcrumbTrail } from "../components/ArticleBreadcrumbTrail";
-import { ArticleTile } from "../components/ArticleTile";
-import { ArticleHoverCard } from "../components/ArticleHoverCard";
-import { useResearchNav } from "../context/ResearchNavContext";
-import { AreaTransitionCards } from "../components/AreaTransitionCards";
-import { CenterMark } from "../components/CenterMark";
-import { OrbitPath } from "../components/OrbitPath";
-import { useOpenArticle } from "../hooks/useOpenArticle";
-import { computeOrbitPositions } from "../utils/clusterLayout";
-import { computeIsometricPositions } from "../utils/isometricLayout";
-import { isometricToMorph, orbitCenterToMorph } from "../utils/transitionMorph";
-import { buildMorphTransition } from "../utils/transitionMotion";
-import type { ArticlePosition } from "../types/research";
+import { ORBIT_DIAL_CONFIG } from "../../config/orbit";
+import { TRANSITION_DEFAULTS } from "./config/transitions";
+import { useArticleTrail } from "../../context/ArticleTrailContext";
+import { useIsArticleOverlayOpen } from "../../context/ArticleOverlayContext";
+import { useViewVariantTransition } from "../../context/ViewVariantContext";
+import { getAreaBySlug } from "../../data/areas";
+import { getArticlesByArea } from "../../data/articles";
+import { ArticleBreadcrumbTrail } from "../../components/ArticleBreadcrumbTrail";
+import { ArticleTile } from "../../components/ArticleTile";
+import { ArticleHoverCard } from "../../components/ArticleHoverCard";
+import { useResearchNav } from "../../context/ResearchNavContext";
+import { AreaTransitionCards } from "../../components/AreaTransitionCards";
+import { CenterMark } from "../../components/CenterMark";
+import { OrbitPath } from "../../components/OrbitPath";
+import { useOpenArticle } from "../../hooks/useOpenArticle";
+import { computeOrbitPositions } from "../../utils/clusterLayout";
+import { computeIsometricPositions } from "../../utils/isometricLayout";
+import { isometricToMorph, orbitCenterToMorph } from "./config/morph";
+import { buildMorphTransition } from "../../utils/transitionMotion";
+import type { ArticlePosition } from "../../types/research";
 
 interface LocationState {
   fromReverseTransition?: boolean;
@@ -148,7 +149,7 @@ interface AreaTransitionState {
   fromPositions: ArticlePosition[];
 }
 
-export default function ConcentricIndex() {
+export default function ConcentricView() {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = (location.state as LocationState | null) ?? {};
@@ -156,6 +157,7 @@ export default function ConcentricIndex() {
   const openArticle = useOpenArticle();
   const { trailSegments } = useArticleTrail();
   const isArticleOpen = useIsArticleOverlayOpen();
+  const { setTransitioning } = useViewVariantTransition();
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [areaTransition, setAreaTransition] = useState<AreaTransitionState | null>(null);
   const [fadingInOthers, setFadingInOthers] = useState(
@@ -173,6 +175,13 @@ export default function ConcentricIndex() {
   const transitioningArticles = transitioningArea
     ? getArticlesByArea(transitioningArea.id)
     : [];
+
+  const isAreaTransitioning = areaTransition !== null;
+
+  useEffect(() => {
+    setTransitioning(isAreaTransitioning);
+    return () => setTransitioning(false);
+  }, [isAreaTransitioning, setTransitioning]);
 
   useEffect(() => {
     if (!location.state || isArticleOpen) return;
@@ -231,8 +240,6 @@ export default function ConcentricIndex() {
     },
     [areaTransition, isArticleOpen, positions],
   );
-
-  const isAreaTransitioning = areaTransition !== null;
 
   useResearchNav({
     activeSlug: areaTransition?.slug ?? activeSlug,

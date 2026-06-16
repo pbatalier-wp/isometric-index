@@ -1,5 +1,5 @@
 import type { Transition } from "motion/react";
-import type { TransitionValues, TransitionEasing } from "../config/transitions";
+import type { TransitionValues, TransitionEasing } from "../types/transitions";
 
 export function buildMorphTransition(values: TransitionValues): Transition {
   if (values.easing === "spring") {

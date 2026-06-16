@@ -1,0 +1,180 @@
+.variant-sidenav {
+  --sidenav-bg: rgba(255, 255, 255, 0.88);
+  --sidenav-border: var(--color-border, rgba(0, 0, 0, 0.12));
+  --sidenav-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --sidenav-text: var(--color-text, #292929);
+  --sidenav-text-muted: var(--color-text-muted, rgba(41, 41, 41, 0.35));
+  --sidenav-text-section: rgba(41, 41, 41, 0.5);
+  --sidenav-surface-hover: rgba(0, 0, 0, 0.04);
+  --sidenav-surface-active: var(--color-pill-active, #eeeef3);
+  --sidenav-focus: rgba(41, 41, 41, 0.85);
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 250;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  color: var(--sidenav-text-muted);
+  transition: width 0.2s ease;
+}
+
+.variant-sidenav[data-collapsed="true"] {
+  width: 40px;
+}
+
+.variant-sidenav[data-collapsed="false"] {
+  width: 280px;
+}
+
+.variant-sidenav-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin: 12px 0 12px 12px;
+  background: var(--sidenav-bg);
+  border: 1px solid var(--sidenav-border);
+  border-radius: 8px;
+  box-shadow: var(--sidenav-shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.variant-sidenav[data-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.variant-sidenav-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--sidenav-border);
+  flex-shrink: 0;
+}
+
+.variant-sidenav-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sidenav-text-section);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.variant-sidenav[data-collapsed="true"] .variant-sidenav-title {
+  display: none;
+}
+
+.variant-sidenav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sidenav-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.variant-sidenav-toggle:hover {
+  background: var(--sidenav-surface-hover);
+  color: var(--sidenav-text);
+}
+
+.variant-sidenav-toggle:focus-visible {
+  outline: 2px solid var(--sidenav-focus);
+  outline-offset: 1px;
+}
+
+.variant-sidenav-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.variant-sidenav[data-collapsed="true"] .variant-sidenav-toggle svg {
+  transform: rotate(180deg);
+}
+
+.variant-sidenav-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.variant-sidenav[data-collapsed="true"] .variant-sidenav-content {
+  display: none;
+}
+
+.variant-sidenav-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--sidenav-text-muted);
+}
+
+.variant-sidenav-item:hover:not(:disabled) {
+  background: var(--sidenav-surface-hover);
+  color: var(--sidenav-text);
+}
+
+.variant-sidenav-item[data-active="true"] {
+  background: var(--sidenav-surface-active);
+  color: var(--sidenav-text);
+}
+
+.variant-sidenav-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.variant-sidenav-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.variant-sidenav-item-description {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--sidenav-text-section);
+}
+
+.variant-sidenav-item[data-active="true"] .variant-sidenav-item-description {
+  color: var(--sidenav-text-muted);
+}
+
+.variant-sidenav-collapsed-label {
+  display: none;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sidenav-text-section);
+  margin: auto 0;
+  padding-bottom: 8px;
+}
+
+.variant-sidenav[data-collapsed="true"] .variant-sidenav-collapsed-label {
+  display: block;
+}

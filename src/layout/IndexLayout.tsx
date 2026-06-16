@@ -1,12 +1,12 @@
 import { Route, Routes, useLocation } from "react-router-dom";
 import { ArticlePageModal } from "../components/ArticlePageModal";
 import { ArticleOverlayProvider } from "../context/ArticleOverlayContext";
-import ConcentricIndex from "../pages/ConcentricIndex";
-import IsometricView from "../pages/IsometricView";
+import { useViewVariant } from "../context/ViewVariantContext";
 import type { ArticleRouteState } from "../types/research";
 
 export default function IndexLayout() {
   const location = useLocation();
+  const { activeVariant } = useViewVariant();
   const state = location.state as ArticleRouteState | null;
   const background = state?.background;
   const isArticleRoute = location.pathname.startsWith("/article/");
@@ -21,14 +21,21 @@ export default function IndexLayout() {
         }
       : location;
 
+  const {
+    ConcentricView,
+    IsometricView,
+    ArticleModal: VariantArticleModal,
+  } = activeVariant;
+  const ArticleModal = VariantArticleModal ?? ArticlePageModal;
+
   return (
     <ArticleOverlayProvider open={isArticleRoute}>
-      <Routes location={spatialLocation}>
-        <Route path="/" element={<ConcentricIndex />} />
+      <Routes key={activeVariant.id} location={spatialLocation}>
+        <Route path="/" element={<ConcentricView />} />
         <Route path="/area/:areaSlug" element={<IsometricView />} />
       </Routes>
       <Routes>
-        <Route path="/article/:slug" element={<ArticlePageModal />} />
+        <Route path="/article/:slug" element={<ArticleModal />} />
       </Routes>
     </ArticleOverlayProvider>
   );

@@ -88,6 +88,7 @@ export default function IsometricView() {
     if (macroTransition || isArticleOpen) return;
 
     const onWheel = (e: WheelEvent) => {
+      if ((e.target as Element).closest("[data-column-center-content]")) return;
       e.preventDefault();
       scrollRef.current += e.deltaY * 0.4;
       setScrollY(scrollRef.current);
@@ -188,6 +189,10 @@ export default function IsometricView() {
             articles={articles}
             visible={!macroTransition}
             fromTransition={skipCardEnterAnimation}
+            onArticleClick={(article) => {
+              setHoveredId(null);
+              openArticle(article.slug, article.id);
+            }}
           />
           {columnPositions.map(({ instanceId, article, x, y, zIndex }) => (
             <ColumnArticleCard

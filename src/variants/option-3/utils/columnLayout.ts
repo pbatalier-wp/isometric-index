@@ -51,13 +51,16 @@ export function computeColumnPositions(
     if (cardCount === 0) return;
 
     const loopSpan = cardCount * COLUMN_ROW_GAP;
-    const copiesNeeded = Math.ceil(viewportHeight / loopSpan) + 2;
+    const minY = -COLUMN_CARD_SIZE;
+    const maxY = viewportHeight + COLUMN_CARD_SIZE;
+    const startCopy = Math.floor((scrollY + centerY - maxY) / loopSpan);
+    const endCopy = Math.ceil((scrollY + centerY - minY) / loopSpan);
 
-    for (let copy = -copiesNeeded; copy <= copiesNeeded; copy += 1) {
+    for (let copy = startCopy; copy <= endCopy; copy += 1) {
       column.items.forEach((article, index) => {
         const y = centerY + index * COLUMN_ROW_GAP - scrollY + copy * loopSpan;
 
-        if (y < -COLUMN_CARD_SIZE || y > viewportHeight + COLUMN_CARD_SIZE) return;
+        if (y < minY || y > maxY) return;
 
         positions.push({
           instanceId: `${column.id}-${article.id}-${copy}-${index}`,

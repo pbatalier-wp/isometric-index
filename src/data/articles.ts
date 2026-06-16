@@ -111,3 +111,7 @@ export function getArticleById(id: string): ResearchArticle | undefined {
 export function getArticleBySlug(slug: string): ResearchArticle | undefined {
   return researchArticles.find((article) => article.slug === slug);
 }
+
+export function getRandomArticle(): ResearchArticle {
+  return researchArticles[Math.floor(Math.random() * researchArticles.length)];
+}

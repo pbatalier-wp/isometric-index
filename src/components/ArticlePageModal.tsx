@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDialKit } from "dialkit";
 import { AnimatePresence, motion, type Transition, type Easing } from "motion/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
-  ARTICLE_MODAL_DIAL_CONFIG,
+  ARTICLE_MODAL_SETTINGS,
   JULY_MODAL_LINEAR_EASE,
 } from "../config/articleModal";
 import { getArticleBySlug } from "../data/articles";
@@ -19,7 +18,7 @@ export function ArticlePageModal() {
 
   const article = slug ? getArticleBySlug(slug) : undefined;
   const content = slug ? getArticleContent(slug) : undefined;
-  const modal = useDialKit("Article modal", ARTICLE_MODAL_DIAL_CONFIG);
+  const modal = ARTICLE_MODAL_SETTINGS;
 
   const panelEase = useMemo<Easing | Easing[]>(() => {
     if (modal.panel.useJulyEasing) return JULY_MODAL_LINEAR_EASE as Easing;

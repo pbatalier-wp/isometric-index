@@ -313,7 +313,7 @@ export default function ConcentricView() {
         animate={{ opacity: isAreaTransitioning ? 0 : 1, scale: isAreaTransitioning ? 0.8 : 1 }}
         transition={{ duration: 0.4 }}
       >
-        <CenterMark />
+        <CenterMark disabled={isAreaTransitioning || isArticleOpen} />
       </motion.div>
 
       {positions.map(({ article, x, y }) => {

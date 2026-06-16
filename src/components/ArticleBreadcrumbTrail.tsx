@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import type { ArticlePosition, ArticleTrailSegment } from "../types/research";
+import { buildTrailSegmentPath } from "../utils/trailPath";
 
 interface ArticleBreadcrumbTrailProps {
   width: number;
@@ -48,17 +49,19 @@ export function ArticleBreadcrumbTrail({
           const to = positionById.get(segment.toArticleId);
           if (!from || !to) return null;
 
+          const path = buildTrailSegmentPath(from, to);
+
           return (
-            <motion.line
+            <motion.path
               key={`${segment.fromArticleId}-${segment.toArticleId}-${segment.timestamp.getTime()}`}
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
+              d={path.d}
+              fill="none"
               stroke={TRAIL_STROKE}
               strokeOpacity={TRAIL_STROKE_OPACITY}
               strokeWidth={TRAIL_STROKE_WIDTH}
               strokeDasharray={TRAIL_DASH}
+              strokeLinecap="round"
+              strokeLinejoin="round"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.45, ease: "easeOut" }}
@@ -71,8 +74,7 @@ export function ArticleBreadcrumbTrail({
         const to = positionById.get(segment.toArticleId);
         if (!from || !to) return null;
 
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2;
+        const path = buildTrailSegmentPath(from, to);
 
         return (
           <motion.div
@@ -82,8 +84,8 @@ export function ArticleBreadcrumbTrail({
             transition={{ duration: 0.3, delay: 0.12 }}
             style={{
               position: "absolute",
-              left: midX,
-              top: midY,
+              left: path.labelX,
+              top: path.labelY,
               transform: "translate(-50%, -50%)",
               display: "flex",
               alignItems: "center",

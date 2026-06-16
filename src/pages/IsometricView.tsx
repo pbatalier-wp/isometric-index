@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useDialKit } from "dialkit";
 import { ORBIT_DIAL_CONFIG } from "../config/orbit";
 import { TRANSITION_DEFAULTS } from "../config/transitions";
@@ -9,6 +9,9 @@ import { useIsArticleOverlayOpen } from "../context/ArticleOverlayContext";
 import { getAreaBySlug } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
 import { AreaTransitionCards } from "../components/AreaTransitionCards";
+import { ArticleBreadcrumbTrail } from "../components/ArticleBreadcrumbTrail";
+import { ArticleRadialHoverMenu } from "../components/ArticleRadialHoverMenu";
+import { useArticleTrail } from "../context/ArticleTrailContext";
 import { useOpenArticle } from "../hooks/useOpenArticle";
 import { computeOrbitPositions } from "../utils/clusterLayout";
 import { computeIsometricPositions, CARD_H, CARD_W } from "../utils/isometricLayout";
@@ -30,14 +33,29 @@ export default function IsometricView() {
   const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
   const openArticle = useOpenArticle();
   const isArticleOpen = useIsArticleOverlayOpen();
+  const { trailSegments } = useArticleTrail();
 
   const area = areaSlug ? getAreaBySlug(areaSlug) : undefined;
   const articles = area ? getArticlesByArea(area.id) : [];
 
   const [scroll, setScroll] = useState(0);
   const [macroTransition, setMacroTransition] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const accRef = useRef(0);
+  const hoverClearRef = useRef<number | null>(null);
+
+  const scheduleHoverClear = useCallback(() => {
+    if (hoverClearRef.current !== null) window.clearTimeout(hoverClearRef.current);
+    hoverClearRef.current = window.setTimeout(() => setHoveredId(null), 150);
+  }, []);
+
+  const cancelHoverClear = useCallback(() => {
+    if (hoverClearRef.current !== null) {
+      window.clearTimeout(hoverClearRef.current);
+      hoverClearRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!location.state || isArticleOpen) return;
@@ -132,6 +150,17 @@ export default function IsometricView() {
     ]),
   );
 
+  const trailPositions = isometricPositions.map(({ article, x, y }) => ({
+    article,
+    x: x + CARD_W / 2,
+    y: y + CARD_H / 2,
+  }));
+
+  const hoveredPosition = hoveredId
+    ? isometricPositions.find((position) => position.article.id === hoveredId)
+    : null;
+  const hoverLift = -50;
+
   return (
     <div
       style={{
@@ -163,20 +192,38 @@ export default function IsometricView() {
         {area.label}
       </motion.div>
 
+      {!macroTransition && trailSegments.length > 0 && (
+        <ArticleBreadcrumbTrail
+          width={size.width}
+          height={size.height}
+          segments={trailSegments}
+          positions={trailPositions}
+        />
+      )}
+
       {!macroTransition &&
-        isometricPositions.map(({ article, x, y, zIndex }) => (
+        isometricPositions.map(({ article, x, y, zIndex }) => {
+          const isHovered = hoveredId === article.id;
+          const isDimmed = hoveredId !== null && !isHovered;
+
+          return (
           <motion.div
             key={article.id}
             initial={fromTransition ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{ opacity: isDimmed ? 0.55 : 1, y: 0 }}
             whileHover="hover"
             style={{
               position: "absolute",
               left: x,
               top: y,
-              zIndex,
+              zIndex: isHovered ? 100 : zIndex,
               cursor: "pointer",
             }}
+            onMouseEnter={() => {
+              cancelHoverClear();
+              setHoveredId(article.id);
+            }}
+            onMouseLeave={scheduleHoverClear}
             onClick={() => openArticle(article.slug, article.id)}
           >
             <motion.div
@@ -206,7 +253,20 @@ export default function IsometricView() {
               />
             </motion.div>
           </motion.div>
-        ))}
+          );
+        })}
+
+      <AnimatePresence>
+        {!macroTransition && !isArticleOpen && hoveredPosition && (
+          <ArticleRadialHoverMenu
+            key={hoveredPosition.article.id}
+            article={hoveredPosition.article}
+            centerX={hoveredPosition.x + CARD_W / 2}
+            centerY={hoveredPosition.y + CARD_H / 2 + hoverLift}
+            viewport={size}
+          />
+        )}
+      </AnimatePresence>
 
       {macroTransition && (
         <AreaTransitionCards

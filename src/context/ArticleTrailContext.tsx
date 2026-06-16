@@ -12,7 +12,6 @@ import type { ArticleTrailSegment } from "../types/research";
 interface ArticleTrailContextValue {
   trailSegments: ArticleTrailSegment[];
   recordArticleVisit: (articleId: string) => void;
-  clearTrail: () => void;
 }
 
 const ArticleTrailContext = createContext<ArticleTrailContextValue | null>(null);
@@ -36,14 +35,9 @@ export function ArticleTrailProvider({ children }: { children: ReactNode }) {
     committedArticleIdRef.current = articleId;
   }, []);
 
-  const clearTrail = useCallback(() => {
-    setTrailSegments([]);
-    committedArticleIdRef.current = null;
-  }, []);
-
   const value = useMemo(
-    () => ({ trailSegments, recordArticleVisit, clearTrail }),
-    [trailSegments, recordArticleVisit, clearTrail],
+    () => ({ trailSegments, recordArticleVisit }),
+    [trailSegments, recordArticleVisit],
   );
 
   return <ArticleTrailContext.Provider value={value}>{children}</ArticleTrailContext.Provider>;

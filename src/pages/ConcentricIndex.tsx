@@ -154,7 +154,7 @@ export default function ConcentricIndex() {
   const locationState = (location.state as LocationState | null) ?? {};
   const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
   const openArticle = useOpenArticle();
-  const { trailSegments, clearTrail } = useArticleTrail();
+  const { trailSegments } = useArticleTrail();
   const isArticleOpen = useIsArticleOverlayOpen();
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [areaTransition, setAreaTransition] = useState<AreaTransitionState | null>(null);
@@ -227,10 +227,9 @@ export default function ConcentricIndex() {
       if (areaTransition || isArticleOpen) return;
       setActiveSlug(slug);
       setHoveredId(null);
-      clearTrail();
       setAreaTransition({ slug, fromPositions: positions });
     },
-    [areaTransition, clearTrail, isArticleOpen, positions],
+    [areaTransition, isArticleOpen, positions],
   );
 
   const isAreaTransitioning = areaTransition !== null;

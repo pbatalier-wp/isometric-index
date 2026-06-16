@@ -60,7 +60,6 @@ function ColumnMorphCard({ area, article, from, to, index, onComplete }: ColumnM
           height: "100%",
           objectFit: "cover",
           display: "block",
-          filter: "grayscale(1)",
         }}
       />
     </motion.div>

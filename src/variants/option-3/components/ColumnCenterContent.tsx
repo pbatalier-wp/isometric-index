@@ -1,11 +1,13 @@
 import { motion } from "motion/react";
 import type { ResearchArea, ResearchArticle } from "../../../types/research";
+import { ColumnArticleList } from "./ColumnArticleList";
 
 interface ColumnCenterContentProps {
   area: ResearchArea;
   articles: ResearchArticle[];
   visible: boolean;
   fromTransition: boolean;
+  onArticleClick: (article: ResearchArticle) => void;
 }
 
 function buildAreaSummary(articles: ResearchArticle[]): string {
@@ -19,9 +21,11 @@ export function ColumnCenterContent({
   articles,
   visible,
   fromTransition,
+  onArticleClick,
 }: ColumnCenterContentProps) {
   return (
     <motion.div
+      data-column-center-content
       initial={fromTransition ? { opacity: 0, filter: "blur(4px)" } : false}
       animate={{
         opacity: visible ? 1 : 0,
@@ -37,11 +41,13 @@ export function ColumnCenterContent({
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        maxWidth: 448,
+        maxWidth: "min(720px, calc(100vw - 96px))",
         width: "100%",
+        maxHeight: "calc(100vh - 120px)",
+        overflowY: "auto",
         padding: "0 24px",
         zIndex: 10,
-        pointerEvents: "none",
+        pointerEvents: "auto",
       }}
     >
       <h2
@@ -77,6 +83,9 @@ export function ColumnCenterContent({
       >
         {buildAreaSummary(articles)}
       </p>
+      <div style={{ marginTop: 48 }}>
+        <ColumnArticleList articles={articles} onArticleClick={onArticleClick} />
+      </div>
     </motion.div>
   );
 }

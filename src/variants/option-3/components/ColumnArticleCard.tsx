@@ -28,11 +28,13 @@ export function ColumnArticleCard({
 
   return (
     <motion.div
-      initial={skipEnterAnimation ? false : { left, top, opacity: 0 }}
-      animate={{ left, top, opacity: 1 }}
+      initial={skipEnterAnimation ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: "absolute",
+        left,
+        top,
         width: COLUMN_CARD_SIZE,
         zIndex: isHovered ? 50 : zIndex,
         cursor: "pointer",
@@ -58,7 +60,6 @@ export function ColumnArticleCard({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            filter: "grayscale(1)",
           }}
         />
       </div>

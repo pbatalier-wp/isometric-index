@@ -9,11 +9,15 @@ interface ArticleTileProps {
   y: number;
   isHovered: boolean;
   isDimmed: boolean;
+  opacityOnlyDimmed?: boolean;
   isHeavilyDimmed?: boolean;
+  isObfuscated?: boolean;
   isExiting?: boolean;
   isEntering?: boolean;
   isFocused: boolean;
   allowClickWhenDimmed?: boolean;
+  interactive?: boolean;
+  baseZIndex?: number;
   onHover: (id: string | null) => void;
   onClick: () => void;
 }
@@ -24,36 +28,63 @@ export function ArticleTile({
   y,
   isHovered,
   isDimmed,
+  opacityOnlyDimmed = false,
   isHeavilyDimmed = false,
+  isObfuscated = false,
   isExiting = false,
   isEntering = false,
   isFocused,
   allowClickWhenDimmed = false,
+  interactive = true,
+  baseZIndex = 1,
   onHover,
   onClick,
 }: ArticleTileProps) {
+  const showHover = interactive && isHovered;
+  const opacity = isExiting
+    ? 0
+    : isObfuscated
+      ? 0.35
+      : isHeavilyDimmed
+        ? 0.18
+        : isDimmed || opacityOnlyDimmed
+          ? 0.3
+          : 1;
+  const filter = isExiting
+    ? "blur(10px)"
+    : isObfuscated
+      ? "blur(14px)"
+      : isHeavilyDimmed
+        ? "blur(14px)"
+        : isDimmed
+          ? "blur(5px)"
+          : "blur(0px)";
+
   return (
     <motion.div
       initial={isEntering ? { opacity: 0, scale: 0.85, filter: "blur(6px)" } : false}
       animate={{
-        opacity: isExiting ? 0 : isHeavilyDimmed ? 0.18 : isDimmed ? 0.3 : 1,
-        filter: isExiting ? "blur(10px)" : isHeavilyDimmed ? "blur(14px)" : isDimmed ? "blur(5px)" : "blur(0px)",
-        scale: isExiting ? 0.75 : isHovered ? 1.05 : 1,
+        opacity,
+        filter,
+        scale: isExiting ? 0.75 : showHover ? 1.05 : 1,
       }}
-      transition={{ duration: isExiting ? 0.45 : isEntering ? 0.5 : isHeavilyDimmed ? 0.35 : 0.2 }}
-      onMouseEnter={() => onHover(article.id)}
-      onMouseLeave={() => onHover(null)}
-      onClick={onClick}
+      transition={{
+        duration: isExiting ? 0.45 : isEntering ? 0.5 : isObfuscated ? 0.4 : isHeavilyDimmed ? 0.35 : 0.2,
+      }}
+      onMouseEnter={interactive ? () => onHover(article.id) : undefined}
+      onMouseLeave={interactive ? () => onHover(null) : undefined}
+      onClick={interactive ? onClick : undefined}
       style={{
         position: "absolute",
         left: x - TILE_SIZE / 2,
         top: y - TILE_SIZE / 2,
         width: TILE_SIZE,
         height: TILE_SIZE,
-        cursor: "pointer",
+        cursor: interactive ? "pointer" : "default",
         visibility: isFocused ? "hidden" : "visible",
-        pointerEvents: isExiting || (isDimmed && !allowClickWhenDimmed) ? "none" : "auto",
-        zIndex: isHovered ? 100 : 1,
+        pointerEvents:
+          !interactive || isExiting || (isDimmed && !allowClickWhenDimmed) ? "none" : "auto",
+        zIndex: showHover ? 100 : baseZIndex,
       }}
     >
       <div

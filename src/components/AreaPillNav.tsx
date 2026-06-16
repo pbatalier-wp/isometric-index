@@ -12,6 +12,7 @@ interface AreaPillNavProps {
   leadDisabled?: boolean;
   hidden?: boolean;
   disabled?: boolean;
+  placement?: "top" | "bottom";
 }
 
 const GLASS_SHADOW_LIGHT =
@@ -63,6 +64,7 @@ export function AreaPillNav({
   leadDisabled = false,
   hidden = false,
   disabled = false,
+  placement = "bottom",
 }: AreaPillNavProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const leadSegmentRef = useRef<HTMLDivElement>(null);
@@ -156,7 +158,7 @@ export function AreaPillNav({
       transition={{ duration: 0.35 }}
       style={{
         position: "fixed",
-        bottom: 24,
+        ...(placement === "top" ? { top: 24 } : { bottom: 24 }),
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 200,

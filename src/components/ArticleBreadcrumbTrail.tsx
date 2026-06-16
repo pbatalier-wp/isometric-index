@@ -8,6 +8,7 @@ interface ArticleBreadcrumbTrailProps {
   segments: ArticleTrailSegment[];
   positions: ArticlePosition[];
   hidden?: boolean;
+  zIndex?: number;
 }
 
 const TRAIL_STROKE = "#292929";
@@ -29,6 +30,7 @@ export function ArticleBreadcrumbTrail({
   segments,
   positions,
   hidden = false,
+  zIndex = 0,
 }: ArticleBreadcrumbTrailProps) {
   const positionById = new Map(positions.map((position) => [position.article.id, position]));
 
@@ -40,7 +42,7 @@ export function ArticleBreadcrumbTrail({
         position: "absolute",
         inset: 0,
         pointerEvents: "none",
-        zIndex: 0,
+        zIndex,
       }}
     >
       <svg width={width} height={height} style={{ position: "absolute", inset: 0 }}>

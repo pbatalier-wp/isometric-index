@@ -1,9 +1,10 @@
 import { option1 } from "./option-1";
 import { option2 } from "./option-2";
 import { option3 } from "./option-3";
+import { option4 } from "./option-4";
 import type { ViewVariant } from "./types";
 
-export const VIEW_VARIANTS: ViewVariant[] = [option1, option2, option3];
+export const VIEW_VARIANTS: ViewVariant[] = [option1, option2, option3, option4];
 export const DEFAULT_VARIANT_ID = "option-1";
 
 export function getVariantById(id: string): ViewVariant {

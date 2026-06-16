@@ -90,8 +90,14 @@ export function ViewVariantProvider({ children }: { children: ReactNode }) {
       setActiveVariantId(id);
       writeStorage(VARIANT_STORAGE_KEY, id);
 
+      const nextVariant = getVariantById(id);
       const areaMatch = location.pathname.match(/^\/area\/([^/]+)/);
-      if (areaMatch) {
+
+      if (nextVariant.routing === "stacked") {
+        if (areaMatch || (!location.pathname.startsWith("/article/") && location.pathname !== "/")) {
+          navigate("/", { replace: true });
+        }
+      } else if (areaMatch) {
         navigate(`/area/${areaMatch[1]}`, { replace: true });
       } else if (!location.pathname.startsWith("/article/")) {
         navigate("/", { replace: true });

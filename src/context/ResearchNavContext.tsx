@@ -16,6 +16,8 @@ export interface ResearchNavPageState {
   activeSlug: string | null;
   hidden: boolean;
   disabled: boolean;
+  leadDisabled?: boolean;
+  placement?: "top" | "bottom";
   onSelectArea: (slug: string) => void;
   onBackToConcentric: () => void;
 }
@@ -57,9 +59,10 @@ export function ResearchNavProvider({ children }: { children: ReactNode }) {
         homeActive={view === "concentric"}
         onSelect={pageState.onSelectArea}
         onLeadClick={pageState.onBackToConcentric}
-        leadDisabled={view === "concentric"}
+        leadDisabled={pageState.leadDisabled ?? view === "concentric"}
         hidden={pageState.hidden || isArticleRoute}
         disabled={pageState.disabled}
+        placement={pageState.placement ?? "bottom"}
       />
     </ResearchNavContext.Provider>
   );
@@ -79,6 +82,8 @@ export function useResearchNav(state: ResearchNavPageState) {
     state.activeSlug,
     state.hidden,
     state.disabled,
+    state.leadDisabled,
+    state.placement,
     state.onSelectArea,
     state.onBackToConcentric,
     setPageState,

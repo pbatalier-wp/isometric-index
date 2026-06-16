@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDialKit } from "dialkit";
+import { AnimatePresence, motion, type Transition, type Easing } from "motion/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  ARTICLE_MODAL_DIAL_CONFIG,
+  JULY_MODAL_LINEAR_EASE,
+} from "../config/articleModal";
 import { getArticleBySlug } from "../data/articles";
 import { getArticleContent } from "../data/articleContent";
 import type { ArticleRouteState } from "../types/research";
@@ -14,6 +19,29 @@ export function ArticlePageModal() {
 
   const article = slug ? getArticleBySlug(slug) : undefined;
   const content = slug ? getArticleContent(slug) : undefined;
+  const modal = useDialKit("Article modal", ARTICLE_MODAL_DIAL_CONFIG);
+
+  const panelEase = useMemo<Easing | Easing[]>(() => {
+    if (modal.panel.useJulyEasing) return JULY_MODAL_LINEAR_EASE as Easing;
+    const easing = modal.panel.easing;
+    return easing.type === "easing" ? easing.ease : [0.645, 0.045, 0.355, 1];
+  }, [modal.panel.easing, modal.panel.useJulyEasing]);
+
+  const backdropTransition = useMemo<Transition>(
+    () => ({
+      duration: modal.backdrop.duration,
+      ease: panelEase,
+    }),
+    [modal.backdrop.duration, panelEase],
+  );
+
+  const panelTransition = useMemo<Transition>(
+    () => ({
+      duration: modal.panel.duration,
+      ease: panelEase,
+    }),
+    [modal.panel.duration, panelEase],
+  );
 
   const handleExitComplete = useCallback(() => {
     const state = location.state as ArticleRouteState | null;
@@ -53,9 +81,9 @@ export function ArticlePageModal() {
           key="article-backdrop"
           className="article-modal-backdrop"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: modal.backdrop.opacity }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={backdropTransition}
           onClick={close}
         >
           <motion.div
@@ -64,10 +92,22 @@ export function ArticlePageModal() {
             role="dialog"
             aria-modal="true"
             aria-label={article.title}
-            initial={{ opacity: 0, scale: 0.98, y: "40%" }}
-            animate={{ opacity: 1, scale: 1, y: 32 }}
-            exit={{ opacity: 0, scale: 0.98, y: "100%" }}
-            transition={{ type: "spring", stiffness: 280, damping: 40 }}
+            initial={{
+              opacity: modal.panel.enter.fromOpacity,
+              scale: modal.panel.enter.fromScale,
+              y: `${modal.panel.enter.fromYPercent}%`,
+            }}
+            animate={{
+              opacity: modal.panel.enter.toOpacity,
+              scale: modal.panel.enter.toScale,
+              y: modal.panel.enter.toY,
+            }}
+            exit={{
+              opacity: modal.panel.exit.opacity,
+              scale: modal.panel.exit.scale,
+              y: `${modal.panel.exit.yPercent}%`,
+            }}
+            transition={panelTransition}
             onClick={(event) => event.stopPropagation()}
           >
             <button type="button" className="article-modal-close" aria-label="Close" onClick={close}>

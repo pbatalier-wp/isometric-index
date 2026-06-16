@@ -9,6 +9,8 @@ import { useIsArticleOverlayOpen } from "../context/ArticleOverlayContext";
 import { getAreaBySlug } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
 import { AreaTransitionCards } from "../components/AreaTransitionCards";
+import { ArticleBreadcrumbTrail } from "../components/ArticleBreadcrumbTrail";
+import { useArticleTrail } from "../context/ArticleTrailContext";
 import { useOpenArticle } from "../hooks/useOpenArticle";
 import { computeOrbitPositions } from "../utils/clusterLayout";
 import { computeIsometricPositions, CARD_H, CARD_W } from "../utils/isometricLayout";
@@ -30,6 +32,7 @@ export default function IsometricView() {
   const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
   const openArticle = useOpenArticle();
   const isArticleOpen = useIsArticleOverlayOpen();
+  const { trailSegments } = useArticleTrail();
 
   const area = areaSlug ? getAreaBySlug(areaSlug) : undefined;
   const articles = area ? getArticlesByArea(area.id) : [];
@@ -132,6 +135,12 @@ export default function IsometricView() {
     ]),
   );
 
+  const trailPositions = isometricPositions.map(({ article, x, y }) => ({
+    article,
+    x: x + CARD_W / 2,
+    y: y + CARD_H / 2,
+  }));
+
   return (
     <div
       style={{
@@ -162,6 +171,15 @@ export default function IsometricView() {
       >
         {area.label}
       </motion.div>
+
+      {!macroTransition && trailSegments.length > 0 && (
+        <ArticleBreadcrumbTrail
+          width={size.width}
+          height={size.height}
+          segments={trailSegments}
+          positions={trailPositions}
+        />
+      )}
 
       {!macroTransition &&
         isometricPositions.map(({ article, x, y, zIndex }) => (

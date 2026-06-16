@@ -1,19 +1,29 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { useDialKit } from "dialkit";
-import { getAreaBySlug, researchAreas } from "../data/areas";
+import { ORBIT_DIAL_CONFIG } from "../config/orbit";
+import { TRANSITION_DIAL_CONFIG, asTransitionValues } from "../config/transitions";
+import { getAreaBySlug } from "../data/areas";
 import { getArticlesByArea } from "../data/articles";
 import { ArticleTile, TILE_SIZE } from "../components/ArticleTile";
 import { ArticleHoverCard } from "../components/ArticleHoverCard";
-import { AreaPillNav } from "../components/AreaPillNav";
+import { useResearchNav } from "../context/ResearchNavContext";
 import { AreaTransitionCards } from "../components/AreaTransitionCards";
 import { CenterMark } from "../components/CenterMark";
 import { OrbitPath } from "../components/OrbitPath";
 import { SpiralArticlePreview } from "../components/SpiralArticlePreview";
 import { computeOrbitPositions } from "../utils/clusterLayout";
 import { computeIsometricPositions } from "../utils/isometricLayout";
+import { isometricToMorph, orbitCenterToMorph } from "../utils/transitionMorph";
+import { buildMorphTransition } from "../utils/transitionMotion";
 import type { ArticlePosition, FocusedArticle } from "../types/research";
+
+interface LocationState {
+  fromReverseTransition?: boolean;
+  rotation?: number;
+  areaSlug?: string;
+}
 
 function ViewToggle({ hidden }: { hidden: boolean }) {
   return (
@@ -137,29 +147,42 @@ interface AreaTransitionState {
 
 export default function ConcentricIndex() {
   const navigate = useNavigate();
-  const orbit = useDialKit("Orbit", {
-    showPath: false,
-    radius: [360, 80, 400],
-    ringGap: [30, 0, 120],
-    speed: [0.04, 0, 0.6],
-    arcSpread: [0.4, 0.1, 1.2],
-    pathOpacity: [0.38, 0, 1],
-  });
+  const location = useLocation();
+  const locationState = (location.state as LocationState | null) ?? {};
+  const orbit = useDialKit("Orbit", ORBIT_DIAL_CONFIG);
+  const transitions = useDialKit("Transitions", TRANSITION_DIAL_CONFIG);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focused, setFocused] = useState<FocusedArticle | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [areaTransition, setAreaTransition] = useState<AreaTransitionState | null>(null);
+  const [fadingInOthers, setFadingInOthers] = useState(
+    Boolean(locationState.fromReverseTransition),
+  );
+  const [exitedAreaId] = useState(
+    locationState.areaSlug ? getAreaBySlug(locationState.areaSlug)?.id : undefined,
+  );
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const [rotation, setRotation] = useState(0);
+  const [rotation, setRotation] = useState(locationState.rotation ?? 0);
   const dismissRef = useRef<(() => void) | null>(null);
-  const rotationRef = useRef(0);
+  const rotationRef = useRef(locationState.rotation ?? 0);
 
   const transitioningArea = areaTransition ? getAreaBySlug(areaTransition.slug) : undefined;
   const transitioningArticles = transitioningArea
     ? getArticlesByArea(transitioningArea.id)
     : [];
+
+  useEffect(() => {
+    if (!location.state) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    if (!fadingInOthers) return;
+    const timeout = setTimeout(() => setFadingInOthers(false), 600);
+    return () => clearTimeout(timeout);
+  }, [fadingInOthers]);
 
   useEffect(() => {
     const onResize = () => setSize({ width: window.innerWidth, height: window.innerHeight });
@@ -212,33 +235,45 @@ export default function ConcentricIndex() {
     setTimeout(() => setTransitioning(false), 100);
   };
 
-  const handleAreaSelect = (slug: string) => {
-    if (areaTransition || focused) return;
-    setActiveSlug(slug);
-    setHoveredId(null);
-    setAreaTransition({ slug, fromPositions: positions });
-  };
+  const handleAreaSelect = useCallback(
+    (slug: string) => {
+      if (areaTransition || focused) return;
+      setActiveSlug(slug);
+      setHoveredId(null);
+      setAreaTransition({ slug, fromPositions: positions });
+    },
+    [areaTransition, focused, positions],
+  );
+
+  const isAreaTransitioning = areaTransition !== null;
+
+  useResearchNav({
+    activeSlug: areaTransition?.slug ?? activeSlug,
+    hidden: focused !== null,
+    disabled: transitioning || isAreaTransitioning,
+    onSelectArea: handleAreaSelect,
+    onBackToConcentric: () => {},
+  });
 
   const handleAreaTransitionComplete = () => {
     if (!areaTransition) return;
-    navigate(`/area/${areaTransition.slug}`, { state: { fromTransition: true } });
+    navigate(`/area/${areaTransition.slug}`, {
+      state: { fromTransition: true, rotation: rotationRef.current },
+    });
   };
-
-  const isAreaTransitioning = areaTransition !== null;
-  const transitionFromMap = new Map(
-    areaTransition?.fromPositions.map((position) => [
-      position.article.id,
-      { x: position.x, y: position.y },
-    ]) ?? [],
+  const transitionFromByArticle = new Map(
+    transitioningArticles
+      .map((article) => {
+        const position = areaTransition?.fromPositions.find((p) => p.article.id === article.id);
+        return position ? [article.id, orbitCenterToMorph(position.x, position.y)] as const : null;
+      })
+      .filter((entry): entry is [string, ReturnType<typeof orbitCenterToMorph>] => entry !== null),
   );
-  const transitionToPositions = transitioningArea
-    ? computeIsometricPositions(
-        transitioningArticles,
-        0,
-        size.width,
-        size.height,
-      )
-    : [];
+  const transitionToByArticle = new Map(
+    computeIsometricPositions(transitioningArticles, 0, size.width, size.height).map(
+      (position) => [position.article.id, isometricToMorph(position.x, position.y)] as const,
+    ),
+  );
 
   return (
     <motion.div
@@ -256,8 +291,8 @@ export default function ConcentricIndex() {
         pointerEvents: transitioning || isAreaTransitioning ? "none" : "auto",
       }}
     >
-      <ViewToggle hidden={isAreaTransitioning} />
-      <StatusChrome hidden={isAreaTransitioning} />
+      <ViewToggle hidden={isAreaTransitioning && !fadingInOthers} />
+      <StatusChrome hidden={isAreaTransitioning && !fadingInOthers} />
 
       {orbit.showPath && !isAreaTransitioning && (
         <OrbitPath
@@ -287,6 +322,7 @@ export default function ConcentricIndex() {
           : hoveredId !== null && !isHovered;
         const isHeavilyDimmed = previewOpen && focused.article.id !== article.id;
         const isFocused = focused?.article.id === article.id;
+        const isEntering = fadingInOthers && article.areaId !== exitedAreaId;
 
         return (
           <ArticleTile
@@ -298,6 +334,7 @@ export default function ConcentricIndex() {
             isDimmed={isDimmed}
             isHeavilyDimmed={isHeavilyDimmed}
             isExiting={isAreaTransitioning}
+            isEntering={isEntering}
             isFocused={isFocused}
             onHover={setHoveredId}
             onClick={() => {
@@ -319,8 +356,10 @@ export default function ConcentricIndex() {
         <AreaTransitionCards
           area={transitioningArea}
           articles={transitioningArticles}
-          fromPositions={transitionFromMap}
-          toPositions={transitionToPositions}
+          fromByArticle={transitionFromByArticle}
+          toByArticle={transitionToByArticle}
+          direction="to-isometric"
+          morphTransition={buildMorphTransition(asTransitionValues(transitions.toIsometric))}
           onComplete={handleAreaTransitionComplete}
         />
       )}
@@ -332,12 +371,6 @@ export default function ConcentricIndex() {
           y={hoveredArticle.y}
         />
       )}
-
-      <AreaPillNav
-        areas={researchAreas}
-        activeSlug={areaTransition?.slug ?? activeSlug}
-        onSelect={handleAreaSelect}
-      />
 
       {focused && (
         <SpiralArticlePreview
